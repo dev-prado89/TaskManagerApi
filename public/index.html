@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Gestor de Tareas</title>
+    <style>
+        body {font-family: sans-serif; padding:1rem;}
+        input, button {margin: 0.5rem 0; display: block; }
+        .tarea {margin: 0.5rem 0; padding: 0.5rem; border: 1px solid #ccc;}
+    </style>
+</head>
+<body>
+    <h1>Gestor de Tareas</h1>
+
+    <h2>Agregar Tarea</h2>
+    <input id="title" placeholder="Título" />
+    <input id="person" placeholder="Persona a cargo"/>
+    <button onclick="crearTarea()">Crear</button>
+
+    <h2>Buscar Tarea por Nombre</h2>
+    <input id="buscar" placeholder="Título exacto" />    
+    <button onclick="buscarTarea()">Buscar</button>
+    <div id="resultadoBusqueda"></div>
+
+    <h2>Eliminar Tarea por Nombre</h2>
+    <input id="borrar" placeholder="Título exacto" />    
+    <button onclick="borrarTarea()">Eliminar</button>
+
+    <h2>Listado de Tarea</h2>
+    <button onclick="cargarTareas()">Refrescar</button>
+    <div id="lista"></div>
+
+    <script>
+        const api = 'http://localhost:5108';
+
+        async function cargarTareas(){
+            const res = await fetch(`${api}/task`);
+            const tareas = await res.json();
+            const lista = document.getElementById('lista');
+            lista.innerHTML='';
+            tareas.forEach(t => {
+                const div = document.createElement('div');
+                div.className="tarea";
+                div.innerText = `${t.id}. ${t.title} (${t.personInCharge}) - ${t.isDone ? '✔' : '❌'}`;
+                lista.appendChild(div);
+            });
+        }
+
+        async function crearTarea() {
+      const title = document.getElementById('title').value.trim();
+      const person = document.getElementById('person').value.trim();
+      if (!title || !person) {
+        alert('Debes completar ambos campos.');
+        return;
+      }
+
+      const res = await fetch(`${api}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, personInCharge: person, isDone: false })
+      });
+
+      if (res.ok) {
+        alert('Tarea creada');
+        cargarTareas();
+        document.getElementById('title').value = '';
+        document.getElementById('person').value = '';
+      } else {
+        const err = await res.text();
+        alert('Error: ' + err);
+      }
+    }
+
+    async function buscarTarea() {
+      const nombre = document.getElementById('buscar').value.trim();
+      const contenedor = document.getElementById('resultadoBusqueda');
+      contenedor.innerHTML = '';
+
+      if (!nombre) return;
+
+      const url = `${api}/task/by-title/search?title=${encodeURIComponent(nombre)}`;
+      console.log("Buscando tarea en: ",url);
+      const res = await fetch(url);
+      if (res.ok) {
+        const tarea = await res.json();
+        if (tarea.length === 0) {
+            contenedor.innerText = 'Tarea no encontrada.';
+        } else {
+            tarea.forEach(t => {
+                const div = document.createElement('div');
+                div.innerText = `${t.title} (${t.personInCharge}) - ${tarea.isDone ? '✔️' : '❌'}`;
+                contenedor.appendChild(div);
+            });
+        }
+        } else {
+            contenedor.innerText = 'Tarea no encontrada.';
+        }      
+    }
+
+    async function borrarTarea() {
+      const nombre = document.getElementById('borrar').value.trim();
+      if (!nombre) return;
+
+      const url = `${api}/task/by-title/delete?title=${encodeURIComponent(nombre)}`;
+      console.log("Eliminando tarea en:", url);
+      const res = await fetch(url, {method: 'DELETE' });
+      if (res.ok) {
+        alert('Tarea eliminada');
+        cargarTareas();
+      } else {
+        alert('No se encontró la tarea');
+      }
+    }
+
+    // Cargar tareas al inicio
+    cargarTareas();
+  </script>
+</body>
+</html>
