@@ -6,7 +6,9 @@ namespace TaskManagerApi.Models
         public int Id { get; set; }
         public string Title { get; set; } = null!;
         public bool IsDone { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public int CreatedByUserId { get; set; }
+        public User CreatedByUser { get; set; } = null!;
 
         //Relations
         public int AssignedUserId { get; set; } //Foreign Key to User
